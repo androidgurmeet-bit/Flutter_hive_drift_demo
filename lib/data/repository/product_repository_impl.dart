@@ -1,14 +1,49 @@
 import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:product_benchmark_app/data/config/product_storage_mode.dart';
 import 'package:product_benchmark_app/data/datasource/product_drift_data_source.dart';
 import 'package:product_benchmark_app/data/datasource/product_hive_data_source.dart';
 import 'package:product_benchmark_app/data/datasource/product_remote_data_source.dart';
 import 'package:product_benchmark_app/data/model/fetch_products_result.dart';
+import 'package:product_benchmark_app/data/model/product_model.dart';
 import 'package:product_benchmark_app/domain/entity/product_benchmark.dart';
 import 'package:product_benchmark_app/domain/entity/product_load_result.dart';
 import 'package:product_benchmark_app/domain/repository/product_repository.dart';
+
+Future<String> _getHiveStoragePath() async {
+  final directory = await getApplicationDocumentsDirectory();
+  return directory.path;
+}
+
+Future<void> _saveHiveInIsolate(Map<String, dynamic> args) async {
+  final storagePath = args['path'] as String;
+  final productMaps = (args['products'] as List).cast<Map<String, dynamic>>();
+
+  Hive.init(storagePath);
+  final box = await Hive.openBox<dynamic>(ProductHiveDataSource.boxName);
+  await box.clear();
+
+  for (final productMap in productMaps) {
+    await box.put(productMap['id'] as int, productMap);
+  }
+
+  await box.close();
+}
+
+Future<List<Map<String, dynamic>>> _readHiveInIsolate(String storagePath) async {
+  Hive.init(storagePath);
+  final box = await Hive.openBox<dynamic>(ProductHiveDataSource.boxName);
+
+  final products = box.values
+      .map((dynamic value) =>
+          Map<String, dynamic>.from(value as Map<dynamic, dynamic>))
+      .toList();
+  await box.close();
+  return products;
+}
 
 class ProductRepositoryImpl implements ProductRepository {
   final ProductRemoteDataSource remoteDataSource;
@@ -51,15 +86,29 @@ class ProductRepositoryImpl implements ProductRepository {
     var hiveReadItems = 0;
 
     if (storageMode.writesHive) {
+      final hiveStoragePath = await _getHiveStoragePath();
+      final hiveProductMaps =
+          remoteResult.products.map((product) => product.toJson()).toList();
+
       _printLog('Hive write started. items=${remoteResult.products.length}');
       final saveWatch = Stopwatch()..start();
-      await hiveDataSource.saveProducts(remoteResult.products);
+      await compute(
+        _saveHiveInIsolate,
+        {
+          'path': hiveStoragePath,
+          'products': hiveProductMaps,
+        },
+      );
       saveWatch.stop();
       hiveWriteMs = saveWatch.elapsedMilliseconds;
       _printLog('Hive write completed in $hiveWriteMs ms');
 
       final readWatch = Stopwatch()..start();
-      final hiveProducts = await hiveDataSource.getProducts();
+      final hiveProductMapsRead =
+          await compute(_readHiveInIsolate, hiveStoragePath);
+      final hiveProducts = hiveProductMapsRead
+          .map((productMap) => ProductModel.fromMap(productMap))
+          .toList();
       readWatch.stop();
       hiveReadMs = readWatch.elapsedMilliseconds;
       hiveReadItems = hiveProducts.length;
