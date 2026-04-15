@@ -19,10 +19,10 @@ abstract class HiveStorageSupport<T> {
 
   Future<Box<T>?> _getBox() async {
     try {
-      var box = await Hive.openBox<T>(
-        boxNameForUser,
-      );
-      return box;
+      if (Hive.isBoxOpen(boxNameForUser)) {
+        return Hive.box<T>(boxNameForUser);
+      }
+      return await Hive.openBox<T>(boxNameForUser);
     } on Exception catch (e) {
       LoggingService()
           .severe('$dbLoggerName || box failed to open', 'failure', error: e);
@@ -30,7 +30,7 @@ abstract class HiveStorageSupport<T> {
     }
   }
 
-  Future closeBox() async {
+  Future<void> closeBox() async {
     try {
       if (!_keepBoxActive && Hive.isBoxOpen(boxNameForUser)) {
         await Hive.box<T>(boxNameForUser).close();
@@ -52,7 +52,7 @@ abstract class HiveStorageSupport<T> {
       var value = box.values.cast<T>();
       LoggingService().info('$dbLoggerName || GetAllData Local DB',
           'List Size:${value.toList().length}');
-      closeBox();
+      await closeBox();
       return ResponseWrapper.success(value.toList(growable: true));
     } on Exception catch (e) {
       LoggingService()
@@ -76,7 +76,7 @@ abstract class HiveStorageSupport<T> {
       var keys = box.keys.cast<T>();
       LoggingService().info('$dbLoggerName || GetAllData Local DB',
           'List Size:${keys.toList().length}');
-      closeBox();
+      await closeBox();
       return ResponseWrapper.success(keys.toList(growable: true));
     } on Exception catch (e) {
       LoggingService()
@@ -99,7 +99,7 @@ abstract class HiveStorageSupport<T> {
       }
       var value = box.get(key);
       LoggingService().info('$dbLoggerName || GetData Local DB', 'Success');
-      closeBox();
+      await closeBox();
       return ResponseWrapper.success(value);
     } on Exception catch (e) {
       LoggingService()
@@ -124,7 +124,7 @@ abstract class HiveStorageSupport<T> {
       await box.delete(key);
       await box.put(key, object);
       LoggingService().info('$dbLoggerName || Save Local DB', 'Success');
-      closeBox();
+      await closeBox();
       return const ResponseWrapper.success(true);
     } on Exception catch (e) {
       await _logFirebase('$dbLoggerName || Save', e);
@@ -151,7 +151,7 @@ abstract class HiveStorageSupport<T> {
         await box.clear();
       }
       await box.putAll(object);
-      closeBox();
+      await closeBox();
       return const ResponseWrapper.success(true);
     } on Exception catch (e) {
       await _logFirebase('$dbLoggerName || update', e);
@@ -174,7 +174,7 @@ abstract class HiveStorageSupport<T> {
       }
       box.delete(key);
       LoggingService().info('$dbLoggerName || Delete Local DB', 'Success');
-      closeBox();
+      await closeBox();
       return const ResponseWrapper.success(true);
     } on Exception catch (e) {
       await _logFirebase('$dbLoggerName || delete', e);
@@ -197,7 +197,7 @@ abstract class HiveStorageSupport<T> {
       }
       await box.deleteAll(box.keys);
       LoggingService().info('$dbLoggerName || DeleteAll Local DB', 'Success');
-      closeBox();
+      await closeBox();
       return const ResponseWrapper.success(true);
     } on Exception catch (e) {
       await _logFirebase('$dbLoggerName || deleteAll', e);
