@@ -85,8 +85,17 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text(
-                        'Price: ${product.price}  Qty: ${product.quantity}',
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Price: ${product.price}  Qty: ${product.quantity}'),
+                          if (product.description != null)
+                            Text(
+                              product.description!,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                        ],
                       ),
                     );
                   },
