@@ -26,6 +26,7 @@ class ProductDriftDataSource {
                   price: product.price,
                   productUrl: product.productUrl,
                   quantity: product.quantity,
+                  description: Value(product.description),
                 ),
               )
               .toList(),
@@ -44,6 +45,7 @@ class ProductDriftDataSource {
             price: row.price,
             productUrl: row.productUrl,
             quantity: row.quantity,
+            description: row.description,
           ),
         )
         .toList();
@@ -57,6 +59,7 @@ class ProductDriftDataSource {
         price: product.price,
         productUrl: product.productUrl,
         quantity: product.quantity,
+        description: Value(product.description),
       ),
     );
   }

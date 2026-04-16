@@ -102,6 +102,7 @@ ProductModel _buildDummyProduct(int sequence) {
   final color = _colors[(sequence - 1) % _colors.length];
   final price = 11000 + ((sequence * 137) % 89000) + 0.49;
   final quantity = 5 + (sequence % 75);
+  final description = '$brand $model in $color with $variant configuration.';
 
   return ProductModel(
     id: sequence,
@@ -109,6 +110,7 @@ ProductModel _buildDummyProduct(int sequence) {
     price: price,
     productUrl: _imageUrls[(sequence - 1) % _imageUrls.length],
     quantity: quantity,
+    description: description,
   );
 }
 
@@ -137,13 +139,15 @@ int _estimateProductJsonBytes(ProductModel product) {
   final priceValue = product.price.toStringAsFixed(2).length;
   final productUrlValue = product.productUrl.length;
   final quantityValue = product.quantity.toString().length;
+  final descriptionValue = product.description?.length ?? 0;
 
   return 52 +
       idValue +
       nameValue +
       priceValue +
       productUrlValue +
-      quantityValue;
+      quantityValue +
+      descriptionValue;
 }
 
 String _formatBytes(int bytes) {
