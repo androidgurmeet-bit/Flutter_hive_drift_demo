@@ -1,6 +1,6 @@
 import 'dart:developer';
 
-import 'package:hive/hive.dart';
+import 'package:hive_ce/hive.dart';
 import 'package:product_benchmark_app/data/model/product_model.dart';
 
 class ProductHiveDataSource {
@@ -10,9 +10,9 @@ class ProductHiveDataSource {
   Future<void> saveProducts(List<ProductModel> products) async {
     final box = Hive.box<dynamic>(boxName);
     await box.clear();
-    for (final product in products) {
-      await box.put(product.id, product.toJson());
-    }
+    await box.putAll({
+      for (final product in products) product.id: product.toJson(),
+    });
   }
 
   Future<List<ProductModel>> getProducts() async {
