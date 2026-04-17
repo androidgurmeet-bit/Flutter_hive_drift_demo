@@ -15,6 +15,9 @@ class ProductBenchmark {
   final int? driftWriteTimeMs;
   final int? driftReadTimeMs;
   final int driftReadItems;
+  final int? objectBoxWriteTimeMs;
+  final int? objectBoxReadTimeMs;
+  final int objectBoxReadItems;
 
   const ProductBenchmark({
     required this.storageMode,
@@ -31,5 +34,8 @@ class ProductBenchmark {
     this.driftWriteTimeMs,
     this.driftReadTimeMs,
     required this.driftReadItems,
+    this.objectBoxWriteTimeMs,
+    this.objectBoxReadTimeMs,
+    this.objectBoxReadItems = 0,
   });
 }

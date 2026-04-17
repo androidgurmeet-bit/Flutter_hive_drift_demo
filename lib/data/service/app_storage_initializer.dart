@@ -1,6 +1,7 @@
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:product_benchmark_app/data/datasource/product_drift_data_source.dart';
 import 'package:product_benchmark_app/data/datasource/product_hive_data_source.dart';
+import 'package:product_benchmark_app/data/objectbox_store.dart';
 
 class AppStorageInitializer {
   static Future<void> initialize() async {
@@ -8,5 +9,6 @@ class AppStorageInitializer {
     await Hive.openBox<dynamic>(ProductHiveDataSource.boxName);
     await Hive.openBox<dynamic>(ProductHiveDataSource.metadataBoxName);
     await ProductDriftDataSource().initialize();
+    await initObjectBox();
   }
 }
