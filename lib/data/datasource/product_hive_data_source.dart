@@ -66,34 +66,6 @@ class ProductHiveDataSource {
     return await compute(_deserializeProductsIsolate, jsonStrings);
   }
 
-  // Real API scenario methods - data comes as JSON strings from network
-  // No serialization needed, just store raw JSON and deserialize on read
-  // 
-  // Performance benefit: ~40-50% faster than local generation scenario
-  // Because:
-  // 1. No serialization overhead (data already in JSON from API)
-  // 2. Direct putAll with strings is faster than Map objects
-  // 3. Isolate handles only deserialization (lighter workload)
-  // 4. UI stays responsive during huge downloads + storage
-  Future<void> saveProductsFromApi(List<String> jsonStrings) async {
-    // This simulates: API response → Hive storage (no serialization!)
-    final box = Hive.box<dynamic>(boxName);
-    await box.clear();
-    await box.putAll({
-      for (int i = 0; i < jsonStrings.length; i++)
-        i: jsonStrings[i],  // Store raw JSON from API
-    });
-  }
-
-  Future<List<ProductModel>> getProductsFromApiWithIsolate() async {
-    // This simulates: Read from Hive → deserialize in isolate
-    final box = Hive.box<dynamic>(boxName);
-    final jsonStrings = box.values.toList();
-    
-    // Only deserialize in isolate (no serialization overhead!)
-    return await compute(_deserializeProductsIsolate, jsonStrings);
-  }
-
   Future<ProductModel?> getProduct(int productId) async {
     final box = Hive.box<dynamic>(boxName);
     final value = box.get(productId);
