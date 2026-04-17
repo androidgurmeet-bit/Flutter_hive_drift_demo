@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:product_benchmark_app/data/config/product_storage_mode.dart';
 import 'package:product_benchmark_app/data/datasource/product_drift_data_source.dart';
 import 'package:product_benchmark_app/data/datasource/product_hive_data_source.dart';
+import 'package:product_benchmark_app/data/datasource/product_objectbox_data_source.dart';
 import 'package:product_benchmark_app/data/datasource/product_remote_data_source.dart';
 import 'package:product_benchmark_app/data/model/fetch_products_result.dart';
 import 'package:product_benchmark_app/domain/entity/product_benchmark.dart';
@@ -14,11 +15,13 @@ class ProductRepositoryImpl implements ProductRepository {
   final ProductRemoteDataSource remoteDataSource;
   final ProductHiveDataSource hiveDataSource;
   final ProductDriftDataSource driftDataSource;
+  final ProductObjectBoxDataSource objectBoxDataSource;
 
   ProductRepositoryImpl(
     this.remoteDataSource,
     this.hiveDataSource,
     this.driftDataSource,
+    this.objectBoxDataSource,
   );
 
   @override
@@ -93,6 +96,28 @@ class ProductRepositoryImpl implements ProductRepository {
       await driftDataSource.setLastSyncTime(DateTime.now());
     }
 
+    int? objectBoxWriteMs;
+    int? objectBoxReadMs;
+    var objectBoxReadItems = 0;
+
+    if (storageMode.writesObjectBox) {
+      _printLog('ObjectBox write started. items=${remoteResult.products.length}');
+      final saveWatch = Stopwatch()..start();
+      await objectBoxDataSource.saveProducts(remoteResult.products);
+      saveWatch.stop();
+      objectBoxWriteMs = saveWatch.elapsedMilliseconds;
+      _printLog('ObjectBox write completed in $objectBoxWriteMs ms');
+
+      final readWatch = Stopwatch()..start();
+      final objectBoxProducts = await objectBoxDataSource.getProducts();
+      readWatch.stop();
+      objectBoxReadMs = readWatch.elapsedMilliseconds;
+      objectBoxReadItems = objectBoxProducts.length;
+      _printLog(
+        'ObjectBox read-back completed in $objectBoxReadMs ms. items=$objectBoxReadItems',
+      );
+    }
+
     _printLog(
       'Benchmark summary | mode=${storageMode.label} | '
       'source=${remoteResult.sourceLabel} | '
@@ -100,7 +125,8 @@ class ProductRepositoryImpl implements ProductRepository {
       'payload=${_formatBytes(remoteResult.responseBytes)} | '
       '${_formatSourceTiming(remoteResult)} | '
       'hive=${_formatBenchmark(hiveWriteMs, hiveReadMs)} | '
-      'drift=${_formatBenchmark(driftWriteMs, driftReadMs)}',
+      'drift=${_formatBenchmark(driftWriteMs, driftReadMs)} | '
+      'objectbox=${_formatBenchmark(objectBoxWriteMs, objectBoxReadMs)}',
     );
 
     return ProductLoadResult(
@@ -120,6 +146,9 @@ class ProductRepositoryImpl implements ProductRepository {
         driftWriteTimeMs: driftWriteMs,
         driftReadTimeMs: driftReadMs,
         driftReadItems: driftReadItems,
+        objectBoxWriteTimeMs: objectBoxWriteMs,
+        objectBoxReadTimeMs: objectBoxReadMs,
+        objectBoxReadItems: objectBoxReadItems,
       ),
     );
   }

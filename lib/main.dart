@@ -4,7 +4,9 @@ import 'package:product_benchmark_app/data/config/api_config.dart';
 import 'package:product_benchmark_app/data/config/product_storage_mode.dart';
 import 'package:product_benchmark_app/data/datasource/product_drift_data_source.dart';
 import 'package:product_benchmark_app/data/datasource/product_hive_data_source.dart';
+import 'package:product_benchmark_app/data/datasource/product_objectbox_data_source.dart';
 import 'package:product_benchmark_app/data/datasource/product_remote_data_source.dart';
+import 'package:product_benchmark_app/data/objectbox_store.dart';
 import 'package:product_benchmark_app/data/repository/product_repository_impl.dart';
 import 'package:product_benchmark_app/data/service/app_storage_initializer.dart';
 import 'package:product_benchmark_app/domain/usecase/get_products_use_case.dart';
@@ -19,10 +21,12 @@ Future<void> main() async {
   final remoteDataSource = ProductRemoteDataSource();
   final hiveDataSource = ProductHiveDataSource();
   final driftDataSource = ProductDriftDataSource();
+  final objectBoxDataSource = ProductObjectBoxDataSource(objectBoxStore);
   final repository = ProductRepositoryImpl(
     remoteDataSource,
     hiveDataSource,
     driftDataSource,
+    objectBoxDataSource,
   );
 
   runApp(MainApp(useCase: GetProductsUseCase(repository)));
@@ -45,7 +49,7 @@ class MainApp extends StatelessWidget {
           ..add(
             LoadProductsEvent(
               largeTestCount: ApiConfig.largeTestProductsCount ?? 50000,
-              storageMode: ProductStorageMode.dualWrite,
+              storageMode: ProductStorageMode.objectBoxOnly,
             ),
           ),
         child: const ProductListScreen(),
