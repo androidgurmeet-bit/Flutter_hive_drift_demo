@@ -53,13 +53,14 @@ class ProductRepositoryImpl implements ProductRepository {
     if (storageMode.writesHive) {
       _printLog('Hive write started. items=${remoteResult.products.length}');
       final saveWatch = Stopwatch()..start();
-      await hiveDataSource.saveProducts(remoteResult.products);
+      //await hiveDataSource.saveProducts(remoteResult.products);
+      await hiveDataSource.saveProductsWithIsolate(remoteResult.products);
       saveWatch.stop();
       hiveWriteMs = saveWatch.elapsedMilliseconds;
       _printLog('Hive write completed in $hiveWriteMs ms');
 
       final readWatch = Stopwatch()..start();
-      final hiveProducts = await hiveDataSource.getProducts();
+      final hiveProducts = await hiveDataSource.getProductsWithIsolate();
       readWatch.stop();
       hiveReadMs = readWatch.elapsedMilliseconds;
       hiveReadItems = hiveProducts.length;
