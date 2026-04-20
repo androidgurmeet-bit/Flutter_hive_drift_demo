@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:product_benchmark_app/data/config/api_config.dart';
@@ -16,7 +18,13 @@ import 'package:product_benchmark_app/presentation/screen/product_list_screen.da
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppStorageInitializer.initialize();
+  
+  try {
+    await AppStorageInitializer.initialize();
+  } catch (e, stackTrace) {
+    print('Initialization error: $e');
+    rethrow;
+  }
 
   final remoteDataSource = ProductRemoteDataSource();
   final hiveDataSource = ProductHiveDataSource();
